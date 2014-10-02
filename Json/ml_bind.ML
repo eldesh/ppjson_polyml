@@ -74,4 +74,5 @@ in
 					]
 end (* local *)
 end
+val () = PolyML.addPrettyPrinter (Json.pretty {indent=2,consistent=true});
 
