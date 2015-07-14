@@ -15,24 +15,28 @@ in
   fun pretty {indent,consistent} depth printArgTypes value =
   	if depth <= 0 then P.PrettyString "..."
 	else
-	  let val pretty' = pretty {indent=indent,consistent=consistent}
+	  let
+        val pretty' = pretty {indent=indent,consistent=consistent}
+        val BR = P.PrettyBreak
 	  in
 		case value
 		  of Ty.JInteger  x => P.PrettyString (LargeInt.toString x)
 		   | Ty.JString   s => P.PrettyString ("\"" ^ s ^ "\"")
+		   | Ty.JNull       => P.PrettyString "null"
+		   | Ty.JBool     b => P.PrettyString (Bool.toString b)
 		   | Ty.JArray   xs =>
 			let
 			  val pxs = map (pretty' (depth-1) printArgTypes) xs
 			  fun split xs = foldr (fn (x,[])=> [x]
 									 | (x,xs)=>
-									[x, comma, P.PrettyBreak(1,0) ]
+									[x, comma, BR(1,0) ]
 									@ xs
 									) [] xs
 			in
 			  P.PrettyBlock (indent, consistent, []
-								 , [bracket_open , P.PrettyBreak(1, 0)]
+								 , [bracket_open , BR(1, 0)]
 								 @ (split pxs)
-								 @ [P.PrettyBreak(1,~indent), bracket_close])
+								 @ [BR(1,~indent), bracket_close])
 			end
 		   | Ty.JObject obj =>
 			let
@@ -44,17 +48,15 @@ in
 								])) obj
 			  fun split xs = foldr (fn (x,[])=> [x]
 									 | (x,xs)=>
-									[x, comma, P.PrettyBreak(1,0) ]
+									[x, comma, BR(1,0) ]
 									@ xs
 									) [] xs
 			in
 			  P.PrettyBlock (indent, consistent, []
-								 , [brace_open , P.PrettyBreak(1,0)]
+								 , [brace_open , BR(1,0)]
 								 @ (split pxs)
-								 @ [P.PrettyBreak(1,~indent), brace_close])
+								 @ [BR(1,~indent), brace_close])
 			end
-		   | Ty.JNull       => P.PrettyString "null"
-		   | Ty.JBool     b => P.PrettyString (Bool.toString b)
 	  end
 
   val j = Ty.JArray [Ty.JBool true
