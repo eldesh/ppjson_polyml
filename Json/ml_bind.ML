@@ -6,59 +6,54 @@ local
 in
   structure Ty = JsonTy
 
-  val comma = P.PrettyString ","
-  val bracket_open  = P.PrettyString "["
-  val bracket_close = P.PrettyString "]"
-  val brace_open    = P.PrettyString "{"
-  val brace_close   = P.PrettyString "}"
+  val ` = P.PrettyString
 
   fun pretty {indent,consistent} depth printArgTypes value =
-  	if depth <= 0 then P.PrettyString "..."
+    if depth <= 0 then `"..."
 	else
 	  let
-        val pretty' = pretty {indent=indent,consistent=consistent}
+        (* printer of nested elements *)
+        val pretty' = pretty {indent=indent, consistent=consistent} (depth-1) printArgTypes
         val BR = P.PrettyBreak
 	  in
 		case value
-		  of Ty.JInteger  x => P.PrettyString (LargeInt.toString x)
-		   | Ty.JString   s => P.PrettyString ("\"" ^ s ^ "\"")
-		   | Ty.JNull       => P.PrettyString "null"
-		   | Ty.JBool     b => P.PrettyString (Bool.toString b)
-		   | Ty.JArray   xs =>
+		  of Ty.JInteger  x => `(LargeInt.toString x)
+		   | Ty.JString   s => `("\"" ^ s ^ "\"")
+		   | Ty.JNull       => `"null"
+		   | Ty.JBool     b => `(Bool.toString b)
+		   | Ty.JArray   [] => `"[]"
+		   | Ty.JObject  [] => `"{}"
+		   | Ty.JArray (x::xs) =>
 			let
-			  val pxs = map (pretty' (depth-1) printArgTypes) xs
-			  fun split xs = foldr (fn (x,[])=> [x]
-									 | (x,xs)=>
-									[x, comma, BR(1,0) ]
-									@ xs
-									) [] xs
+              (* x::xs => x_0,<space> x_1,<space> x_2,<space> ... x_(N-1),<space> x_N *)
+              val comma_separated_elems =
+                    rev (foldl (fn (p,ps)=> pretty' p::BR(1,0):: `","::ps) [pretty' x] xs)
 			in
-			  P.PrettyBlock (indent, consistent, []
-								 , [bracket_open , BR(1, 0)]
-								 @ (split pxs)
-								 @ [BR(1,~indent), bracket_close])
+			  P.PrettyBlock (indent, true, []
+								 , [`"[", BR(1, 0)]
+								 @ comma_separated_elems 
+								 @ [BR(1,~indent), `"]"])
 			end
-		   | Ty.JObject obj =>
+		   | Ty.JObject (x::xs) =>
 			let
-			  val pxs = map (fn (k,v)=>
-							 P.PrettyBlock (indent, false, [],
-								[ P.PrettyString ("\"" ^ k ^ "\"")
-								, P.PrettyString ":"
-								, pretty' (depth-1) printArgTypes v
-								])) obj
-			  fun split xs = foldr (fn (x,[])=> [x]
-									 | (x,xs)=>
-									[x, comma, BR(1,0) ]
-									@ xs
-									) [] xs
+              fun pretty_field (k,v) =
+                    P.PrettyBlock (indent, false, []
+                                    , [ `("\"" ^ k ^ "\""), BR(1,0), `":", BR(1,0), pretty' v ])
+
+              (* (f,x)::xs =>
+               *     f0:x0,<space> f1:x1,<space> f2:x2,<space> ... f(N-1):x(N-1),<space> fN:xN
+               *)
+              val comma_separated_fields =
+                    rev (foldl (fn (p,ps)=> pretty_field p::BR(1,0):: `","::ps) [pretty_field x] xs)
 			in
 			  P.PrettyBlock (indent, consistent, []
-								 , [brace_open , BR(1,0)]
-								 @ (split pxs)
-								 @ [BR(1,~indent), brace_close])
+								 , [`"{", BR(1,0)]
+								 @ comma_separated_fields
+								 @ [BR(1,~indent), `"}"])
 			end
 	  end
 
+  (* test object *)
   val j = Ty.JArray [Ty.JBool true
   					, Ty.JBool false
 					, Ty.JNull
