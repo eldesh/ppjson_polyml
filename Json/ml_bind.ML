@@ -30,7 +30,7 @@ in
               val comma_separated_elems =
                     rev (foldl (fn (p,ps)=> pretty' p::BR(1,0):: `","::ps) [pretty' x] xs)
 			in
-			  P.PrettyBlock (indent, true, []
+			  P.PrettyBlock (indent, consistent, []
 								 , [`"[", BR(1, 0)]
 								 @ comma_separated_elems 
 								 @ [BR(1,~indent), `"]"])
