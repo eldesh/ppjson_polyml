@@ -18,6 +18,7 @@ in
 	  in
 		case value
 		  of Ty.JInteger  x => `(LargeInt.toString x)
+		   | Ty.JReal     r => `(Real.toString r)
 		   | Ty.JString   s => `("\"" ^ s ^ "\"")
 		   | Ty.JNull       => `"null"
 		   | Ty.JBool     b => `(Bool.toString b)
@@ -68,6 +69,7 @@ in
 									])
 						]
 					, Ty.JString "aaaaaaabbbbbbdddeeeeeee"
+					, Ty.JReal Real.Math.pi
 					]
 end (* local *)
 end
